@@ -11,6 +11,7 @@
 #include <map>
 #include <iterator>
 #include "face_recognition_ui.hpp"
+#include <sqlite3.h> 
 
 using namespace dlib;
 using namespace std;
@@ -55,39 +56,97 @@ using anet_type = loss_metric<fc_no_bias<128,avg_pool_everything<
                             input_rgb_image_sized<150>
                             >>>>>>>>>>>>;
 
+// std::map<string,matrix<rgb_pixel>> known_image_map;
+// std::map<string,matrix<rgb_pixel>> known_face_map;
+std::map<string, matrix<float,0,1>> known_face_descriptors_map;
+frontal_face_detector detector;
+shape_predictor pose_model;
+// And finally we load the DNN responsible for face recognition.
+anet_type net;
+std::mutex global_lock;
+std::string total_students;
+
+static int callback(void *NotUsed, int columns, char **columnValue, char **azColName) {
+    string regName, regPhoto;
+    face_recognition_ui *thisPtr = static_cast<face_recognition_ui*>(NotUsed);
+    for (int i = 0; i<columns; i++) {
+        if(strcmp(azColName[i],"NAME") == 0)
+        {
+            regName = columnValue[i];
+            total_students.append(regName +'\n');
+        }
+        else if (strcmp(azColName[i] , "PHOTO") == 0)
+        {
+            regPhoto = columnValue[i];
+        }
+    }
+    printf("%s\n", regPhoto);
+    matrix<rgb_pixel> known_img;
+    try {
+        load_image(known_img, regPhoto);
+    }
+    catch (exception e) {
+            printf("Load Image exception:: %s\n",e.what());
+    }
+    
+    // if (detector != NULL && pose_model != NULL)
+    // {
+
+    for (auto face : detector(known_img))
+    {
+    auto shape = pose_model(known_img, face);
+    matrix<rgb_pixel> face_chip;
+    extract_image_chip(known_img, get_face_chip_details(shape,150,0.25), face_chip);
+    // known_face_map.insert(std::pair<string,matrix<rgb_pixel>>(it->first, move(face_chip)));
+    matrix<float,0,1> face_desc = net(face_chip);
+    global_lock.lock();
+    known_face_descriptors_map.insert(std::pair<string, matrix<float,0,1>>(regName, move(face_desc)));
+    global_lock.unlock();
+    // printf("StudentInfo:: %s\n", regName);
+    }
+    thisPtr->registered_box.set_text(total_students);
+    // }    
+
+    // known_image_map.insert(std::pair<string,matrix<rgb_pixel>>(regName,known_img));
+    return 0;
+}
+
 int main(int argc, char** argv)
 {
+    sqlite3 *db;
+    char *zErrMsg = 0;
+    int rc;
+    char *sql;
+    face_recognition_ui faceUI;    
+    
+    cv::VideoCapture cap(0);
+    if (!cap.isOpened()) {
+        cerr << "Unable to connect to camera" << endl;
+            return 1;
+    }
+
+    /*
     if (argc != 4)
     {
         cout << "Run this example by invoking it like this: " << endl;
         cout << "   ./webcam ashok.jpg sai.png bindu.png" << endl;
         cout << endl;
         return 1;
-    }
-    try
-    {
-        cv::VideoCapture cap(0);
-        if (!cap.isOpened())
-        {
-            cerr << "Unable to connect to camera" << endl;
-            return 1;
-        }
+    }*/
 
-        // image_window win;
-        face_recognition_ui faceUI;
-
+    try {
         // Load face detection and pose estimation models.
-        frontal_face_detector detector = get_frontal_face_detector();
-        shape_predictor pose_model;
+        detector = get_frontal_face_detector();
+        
         deserialize("shape_predictor_68_face_landmarks.dat") >> pose_model;
-
-        // And finally we load the DNN responsible for face recognition.
-        anet_type net;
 
         deserialize("dlib_face_recognition_resnet_model_v1.dat") >> net;
 
-        
+        printf("Load complete \n");
+
+        /*
         std::map<string,matrix<rgb_pixel>> known_image_map;
+        
         for(int i=1;i<4;i++)
         {
             matrix<rgb_pixel> known_img;
@@ -96,6 +155,7 @@ int main(int argc, char** argv)
             printf("loop:: %s\n", argv[i]);
         }
         printf("known_image_map size::%d \n", known_image_map.size());
+        
         std::map<string,matrix<rgb_pixel>> known_face_map;
         
         for( std::map<string,matrix<rgb_pixel>>::iterator it = known_image_map.begin(); it != known_image_map.end(); ++it)
@@ -121,76 +181,94 @@ int main(int argc, char** argv)
             matrix<float,0,1> face_desc = net(it->second);
             known_face_descriptors_map.insert(std::pair<string, matrix<float,0,1>>(it->first, move(face_desc)));
         }
-
-        // Grab and process frames until the main window is closed by the user.
-        while(!faceUI.is_closed())
-        {
-            // Grab a frame
-            cv::Mat temp;
-            if (!cap.read(temp))
-            {
-                break;
-            }
-            // Turn OpenCV's Mat into something dlib can deal with.  Note that this just
-            // wraps the Mat object, it doesn't copy anything.  So cimg is only valid as
-            // long as temp is valid.  Also don't do anything to temp that would cause it
-            // to reallocate the memory which stores the image as that will make cimg
-            // contain dangling pointers.  This basically means you shouldn't modify temp
-            // while using cimg.
-            cv_image<bgr_pixel> cimg(temp);
-
-            std::vector<matrix<rgb_pixel>> faces;
-
-            std::vector<full_object_detection> shapes;
-            for (auto face : detector(cimg))
-            {
-            auto shape = pose_model(cimg, face);
-            matrix<rgb_pixel> face_chip;
-            extract_image_chip(cimg, get_face_chip_details(shape,150,0.25), face_chip);
-            faces.push_back(move(face_chip));
-            // Also put some boxes on the faces so we can see that the detector is finding them.
-            shapes.push_back(shape);
-            // win.clear_overlay();
-            // win.set_image(cimg);
-            // win.add_overlay(render_face_detections(shapes));
-            }
-            std::cout << "Number of shapes::" << shapes.size() << std::endl;
-            std::cout << "Number of faces::" << faces.size() << std::endl;
-            
-            faceUI.clear_overlay();
-            faceUI.set_image(cimg);
-            faceUI.add_overlay(render_face_detections(shapes));
-            
-            std::vector<matrix<float,0,1>> face_descriptors = net(faces);
-            std::string results;
-
-            for ( std::vector<matrix<float,0,1>>::iterator it = face_descriptors.begin() ; it != face_descriptors.end() ; ++it)
-            {
-                for (std::map<string, matrix<float,0,1>>::iterator it_desc = known_face_descriptors_map.begin() ; it_desc != known_face_descriptors_map.end() ; ++it_desc)
-                {
-                    float diff = length((*it) - it_desc->second);
-                    if( diff < 0.40 )
-                    {
-                        // printf("%s\n",it_desc->first );
-                        results.append(it_desc->first +'\n');
-                    }
-                }
-
-            }
-            faceUI.results_box.set_text(results);
-        }
+        */        
     }
-    catch(serialization_error& e)
-    {
+    catch(serialization_error& e) {
         cout << "You need dlib's default face landmarking model file to run." << endl;
         cout << "You can get it from the following URL: " << endl;
         cout << "   http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2" << endl;
         cout << "   http://dlib.net/files/dlib_face_recognition_resnet_model_v1.dat.bz2" << endl;
         cout << endl << e.what() << endl;
     }
-    catch(exception& e)
-    {
-        cout << e.what() << endl;
+    catch(exception& e) {
+        cout << "exception raised " << e.what() << endl;
+    }
+
+    /* Open database */
+    rc = sqlite3_open("database/students.db", &db);
+    if ( rc ) {
+        printf( "Can't open database: %s\n", sqlite3_errmsg(db));
+    } else {
+        printf("Opened database successfully\n");
+    }
+
+    /* Create SQL statement */
+    sql = "SELECT * from STUDENT_REGISTRATION";
+
+    /* Execute SQL statement */
+    rc = sqlite3_exec(db, sql, callback, &faceUI , &zErrMsg);
+   
+    if ( rc != SQLITE_OK ) {
+      printf("SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    } else {
+      printf("Operation done successfully\n");
+    }
+
+    // Grab and process frames until the main window is closed by the user.
+    while (!faceUI.is_closed()) {
+        // Grab a frame
+        cv::Mat temp;
+        if (!cap.read(temp)) {
+            break;
+        }
+        // Turn OpenCV's Mat into something dlib can deal with.  Note that this just
+        // wraps the Mat object, it doesn't copy anything.  So cimg is only valid as
+        // long as temp is valid.  Also don't do anything to temp that would cause it
+        // to reallocate the memory which stores the image as that will make cimg
+        // contain dangling pointers.  This basically means you shouldn't modify temp
+        // while using cimg.
+        cv_image<bgr_pixel> cimg(temp);
+
+        std::vector<matrix<rgb_pixel>> faces;
+
+        std::vector<full_object_detection> shapes;
+        for (auto face : detector(cimg)) {
+        auto shape = pose_model(cimg, face);
+        matrix<rgb_pixel> face_chip;
+        extract_image_chip(cimg, get_face_chip_details(shape,150,0.25), face_chip);
+        faces.push_back(move(face_chip));
+        // Also put some boxes on the faces so we can see that the detector is finding them.
+        shapes.push_back(shape);
+        // win.clear_overlay();
+        // win.set_image(cimg);
+        // win.add_overlay(render_face_detections(shapes));
+        }
+        // std::cout << "Number of shapes::" << shapes.size() << std::endl;
+        // std::cout << "Number of faces::" << faces.size() << std::endl;
+        
+        faceUI.clear_overlay();
+        faceUI.set_image(cimg);
+        faceUI.add_overlay(render_face_detections(shapes));
+        
+        std::vector<matrix<float,0,1>> face_descriptors = net(faces);
+        std::string results;
+
+        for ( std::vector<matrix<float,0,1>>::iterator it = face_descriptors.begin() ; it != face_descriptors.end() ; ++it)
+        {
+            global_lock.lock();
+            for (std::map<string, matrix<float,0,1>>::iterator it_desc = known_face_descriptors_map.begin() ; it_desc != known_face_descriptors_map.end() ; ++it_desc)
+            {
+                float diff = length((*it) - it_desc->second);
+                if( diff < 0.40 )
+                {
+                    // printf("%s\n",it_desc->first );
+                    results.append(it_desc->first +'\n');
+                }
+            }
+            global_lock.unlock();
+
+        }
+        faceUI.results_box.set_text(results);
     }
 }
-
