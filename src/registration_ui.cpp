@@ -67,9 +67,15 @@ public:
         img_snap(*this),
         snap_flag(false)
     {
+        std::shared_ptr<bdf_font> new_font(new bdf_font);
+        //ifstream fin("C:/bindu_face_recog/attendance_system/gohu.bdf");
+        //new_font->read_bdf_file(fin,0xFFFF);
+        //studentRegnoLabel.set_main_font(new_font);
+
         img.set_pos(10,60);
         counter = 1;
         img_snap.set_pos(720,60);
+
         // img_snap.set_size (350,350);
         matrix<rgb_pixel> img;
         try {
