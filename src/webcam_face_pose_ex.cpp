@@ -11,7 +11,8 @@
 #include <map>
 #include <iterator>
 #include "face_recognition_ui.hpp"
-#include <sqlite3.h> 
+#include <sqlite3.h>
+#include <ctime>
 
 using namespace dlib;
 using namespace std;
@@ -64,7 +65,7 @@ shape_predictor pose_model;
 // And finally we load the DNN responsible for face recognition.
 anet_type net;
 std::mutex global_lock;
-std::string total_students;
+std::map<std::string, std::string> total_students;
 
 static int callback(void *NotUsed, int columns, char **columnValue, char **azColName) {
     string regName, regPhoto;
@@ -73,7 +74,8 @@ static int callback(void *NotUsed, int columns, char **columnValue, char **azCol
         if(strcmp(azColName[i],"NAME") == 0)
         {
             regName = columnValue[i];
-            total_students.append(regName +'\n');
+            // total_students.append(regName +'\n');
+            total_students.insert(std::pair<std::string,std::string>(regName,"A"));
         }
         else if (strcmp(azColName[i] , "PHOTO") == 0)
         {
@@ -104,7 +106,7 @@ static int callback(void *NotUsed, int columns, char **columnValue, char **azCol
     global_lock.unlock();
     // printf("StudentInfo:: %s\n", regName);
     }
-    thisPtr->registered_box.set_text(total_students);
+    // thisPtr->registered_box.set_text(total_students);
     // }    
 
     // known_image_map.insert(std::pair<string,matrix<rgb_pixel>>(regName,known_img));
@@ -117,8 +119,24 @@ int main(int argc, char** argv)
     char *zErrMsg = 0;
     int rc;
     char *sql;
-    face_recognition_ui faceUI;    
-    
+    char buffer[9];
+    struct tm *info;
+    time_t rawtime;
+    face_recognition_ui faceUI;
+    std::vector<std::string> results;
+    // std::cout << date('now');
+
+    // current date/time based on current system
+    time( &rawtime );
+
+    info = localtime(&rawtime);
+
+    strftime(buffer, 9, "%x", info);
+    cout << "Time:: " << asctime(info) << endl;
+    cout << "The local time is: " << buffer << endl;
+
+
+
     cv::VideoCapture cap(0);
     if (!cap.isOpened()) {
         cerr << "Unable to connect to camera" << endl;
@@ -252,7 +270,6 @@ int main(int argc, char** argv)
         faceUI.add_overlay(render_face_detections(shapes));
         
         std::vector<matrix<float,0,1>> face_descriptors = net(faces);
-        std::string results;
 
         for ( std::vector<matrix<float,0,1>>::iterator it = face_descriptors.begin() ; it != face_descriptors.end() ; ++it)
         {
@@ -262,13 +279,33 @@ int main(int argc, char** argv)
                 float diff = length((*it) - it_desc->second);
                 if( diff < 0.40 )
                 {
-                    // printf("%s\n",it_desc->first );
-                    results.append(it_desc->first +'\n');
+                    // std::cout << it_desc->first << std::endl;
+                    if(std::find(std::begin(results), std::end(results), it_desc->first) == std::end(results) ) {
+                        results.push_back(it_desc->first);
+                        std::cout << it_desc->first << std::endl;
+                    }
                 }
             }
             global_lock.unlock();
 
         }
-        faceUI.results_box.set_text(results);
+        // faceUI.results_box.set_text(results);
+    for(std::vector<std::string>::iterator it = results.begin(); it != results.end(); ++it)
+    {
+        std::map<std::string, std::string>::iterator map_it;
+        map_it = total_students.find(*it);
+        if(map_it != total_students.end())
+        {
+          map_it->second = "P";
+        }
     }
-}
+
+    for(std::map<std::string, std::string>::iterator it = total_students.begin() ; it != total_students.end(); ++it)
+    {
+        std::cout << "Name:: " << it->first << "Attendance:: " << it->second << std::endl;
+    }
+
+    } // window close while
+    sqlite3_close(db);
+    return 0;
+} // main end
