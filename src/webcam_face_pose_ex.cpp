@@ -65,7 +65,6 @@ shape_predictor pose_model;
 // And finally we load the DNN responsible for face recognition.
 anet_type net;
 std::mutex global_lock;
-std::map<std::string, std::string> total_students;
 
 static int callback(void *NotUsed, int columns, char **columnValue, char **azColName) {
     string regName, regPhoto;
@@ -75,7 +74,8 @@ static int callback(void *NotUsed, int columns, char **columnValue, char **azCol
         {
             regName = columnValue[i];
             // total_students.append(regName +'\n');
-            total_students.insert(std::pair<std::string,std::string>(regName,"A"));
+            thisPtr->registered_students.push_back(regName);
+            thisPtr->present_absent_students.insert(std::pair<std::string,std::string>(regName,"A"));
         }
         else if (strcmp(azColName[i] , "PHOTO") == 0)
         {
@@ -248,6 +248,13 @@ int main(int argc, char** argv)
         // while using cimg.
         cv_image<bgr_pixel> cimg(temp);
 
+        if (faceUI.startCondition == false) {
+            faceUI.clear_overlay();
+            faceUI.set_image(cimg);
+            faceUI.showAttendanceLabel.set_text("");
+        }
+        else
+        {
         std::vector<matrix<rgb_pixel>> faces;
 
         std::vector<full_object_detection> shapes;
@@ -279,10 +286,11 @@ int main(int argc, char** argv)
                 float diff = length((*it) - it_desc->second);
                 if( diff < 0.40 )
                 {
-                    // std::cout << it_desc->first << std::endl;
                     if(std::find(std::begin(results), std::end(results), it_desc->first) == std::end(results) ) {
                         results.push_back(it_desc->first);
-                        std::cout << it_desc->first << std::endl;
+                        // std::cout << it_desc->first << std::endl;
+                        std::string display = "Hi "+ it_desc->first +", Have A Nice Day";
+                        faceUI.showAttendanceLabel.set_text(display);
                     }
                 }
             }
@@ -293,17 +301,14 @@ int main(int argc, char** argv)
     for(std::vector<std::string>::iterator it = results.begin(); it != results.end(); ++it)
     {
         std::map<std::string, std::string>::iterator map_it;
-        map_it = total_students.find(*it);
-        if(map_it != total_students.end())
+        map_it = faceUI.present_absent_students.find(*it);
+        if(map_it != faceUI.present_absent_students.end())
         {
           map_it->second = "P";
         }
     }
 
-    for(std::map<std::string, std::string>::iterator it = total_students.begin() ; it != total_students.end(); ++it)
-    {
-        std::cout << "Name:: " << it->first << "Attendance:: " << it->second << std::endl;
-    }
+    } // else of startCondition
 
     } // window close while
     sqlite3_close(db);
