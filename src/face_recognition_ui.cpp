@@ -18,7 +18,7 @@ int callback_to_update(void *NotUsed, int argc, char **argv, char **azColName) {
     for(i = 0; i<argc; i++) {
         printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "now");
         if(strcmp(azColName[i],"MAX(AttendanceDT)") == 0)
-            thisPtr->maxDate = argv[i];
+            thisPtr->maxDate = argv[i] ? argv[i] : "now";
     }
     // printf("\n");
     return 0;
