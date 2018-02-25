@@ -206,13 +206,11 @@ private:
         {
 
                 /* Create SQL statement */
-                char sql_insert[100];
                 int num = atoi(regno.c_str());
-                sprintf(sql_insert, "INSERT INTO STUDENT_REGISTRATION (REGNO,NAME,PHOTO) " \
-                     "VALUES ( %d, '%s', '%s');", num, name.c_str(), filename.c_str());
+                std::string sql_string = "INSERT INTO STUDENT_REGISTRATION (REGNO,NAME,PHOTO) VALUES(" + regno +",'" + name +"','" + filename + "');";
 
                /* Execute SQL statement */
-               rc = sqlite3_exec(db, sql_insert, callback, 0, &zErrMsg);
+               rc = sqlite3_exec(db, sql_string.c_str(), callback, 0, &zErrMsg);
                
                if( rc != SQLITE_OK ){
                   fprintf(stderr, "SQL error: %s\n", zErrMsg);
