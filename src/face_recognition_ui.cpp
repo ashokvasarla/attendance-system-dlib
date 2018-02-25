@@ -162,6 +162,42 @@ face_recognition_ui::face_recognition_ui() :
 
 face_recognition_ui::~face_recognition_ui()
 {
+    if ( startCondition == true)
+    {
+    startCondition = false;
+
+    for(std::map<std::string, std::string>::iterator it = present_absent_students.begin() ; it != present_absent_students.end(); ++it)
+    {
+        std::cout << "Name:: " << it->first << "    " << "Attendance:: " << it->second << std::endl;
+        /* Create SQL statement */
+        char sql_insert[100];
+        // sprintf(sql_insert, "INSERT INTO STUDENT_ATTENDANCE (NAME,AttendanceDT, Attendance) " \
+              "VALUES ( '%s', date('now', '%d days'), '%s');", it->first.c_str(), dateCounter, it->second.c_str());
+
+        std::string sql_string = "INSERT INTO STUDENT_ATTENDANCE (NAME,AttendanceDT, Attendance) VALUES('" + it->first +"'," + "date('"+ maxDate +"','" + std::to_string(dateCounter) +" days'),'"+ it->second + "');";
+
+        /* Execute SQL statement */
+        rc = sqlite3_exec(db, sql_string.c_str(), callback, 0, &zErrMsg);
+
+        if( rc != SQLITE_OK ){
+           fprintf(stderr, "SQL error: %s\n", zErrMsg);
+           sqlite3_free(zErrMsg);
+        } else {
+         fprintf(stdout, "Records created successfully\n");
+        }
+    }
+    present_absent_students.clear();
+    std::cout << "After present_absent_students clear" << std::endl;
+    for(std::vector<std::string>::iterator it = registered_students.begin(); it != registered_students.end(); ++it)
+    {
+        present_absent_students.insert(std::pair<std::string, std::string>(*it, "A"));
+    }
+    for(std::map<std::string, std::string>::iterator it = present_absent_students.begin() ; it != present_absent_students.end(); ++it)
+    {
+        std::cout << "Name:: " << it->first << "    " << "Attendance:: " << it->second << std::endl;
+    }
+    dateCounter++;
+    }
     close_window();
 }
 
@@ -210,6 +246,18 @@ void face_recognition_ui::on_stop_button_clicked() {
         std::cout << "Name:: " << it->first << "    " << "Attendance:: " << it->second << std::endl;
     }
     dateCounter++;
+    }
+
+    rowCounter=1;
+    sql = "SELECT * FROM STUDENT_ATTENDANCE";
+    /* Execute SQL statement */
+    rc = sqlite3_exec(db, sql, callback_to_showreport, this, &zErrMsg);
+
+    if( rc != SQLITE_OK ) {
+       fprintf(stderr, "SQL error: %s\n", zErrMsg);
+       sqlite3_free(zErrMsg);
+    } else {
+       fprintf(stdout, "Operation done successfully\n");
     }
 }
 
