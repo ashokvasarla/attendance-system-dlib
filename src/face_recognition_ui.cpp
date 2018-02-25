@@ -17,8 +17,16 @@ int callback_to_update(void *NotUsed, int argc, char **argv, char **azColName) {
     int i;
     for(i = 0; i<argc; i++) {
         printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "now");
+        if (argv[i])
+        {
         if(strcmp(azColName[i],"MAX(AttendanceDT)") == 0)
             thisPtr->maxDate = argv[i] ? argv[i] : "now";
+        }
+        else
+        {
+            thisPtr->dateCounter=0;
+            thisPtr->maxDate = "now";
+        }
     }
     // printf("\n");
     return 0;
@@ -58,7 +66,7 @@ face_recognition_ui::face_recognition_ui() :
     showReport(*this),
     reportGrid(*this),
     startCondition(false),
-    dateCounter(1),
+    dateCounter(0),
     maxDate("\0"),
     showAttendanceLabel(*this)
 {

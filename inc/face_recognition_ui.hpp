@@ -23,6 +23,7 @@ public:
     int rowCounter;
     text_grid reportGrid;
     label showAttendanceLabel;
+    int dateCounter;
     // text_box results_box;
     // text_box registered_box;
 
@@ -40,5 +41,4 @@ private:
     int rc;
     char *zErrMsg = 0;
     char *sql;
-    int dateCounter;
 };

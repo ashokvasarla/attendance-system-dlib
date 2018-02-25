@@ -286,11 +286,11 @@ int main(int argc, char** argv)
                 float diff = length((*it) - it_desc->second);
                 if( diff < 0.40 )
                 {
+                    std::string display = "Hi "+ it_desc->first +", Have A Nice Day";
+                    faceUI.showAttendanceLabel.set_text(display);
                     if(std::find(std::begin(results), std::end(results), it_desc->first) == std::end(results) ) {
                         results.push_back(it_desc->first);
                         // std::cout << it_desc->first << std::endl;
-                        std::string display = "Hi "+ it_desc->first +", Have A Nice Day";
-                        faceUI.showAttendanceLabel.set_text(display);
                     }
                 }
             }
