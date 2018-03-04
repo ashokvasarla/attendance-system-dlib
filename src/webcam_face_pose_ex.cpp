@@ -72,17 +72,24 @@ static int callback(void *NotUsed, int columns, char **columnValue, char **azCol
     for (int i = 0; i<columns; i++) {
         if(strcmp(azColName[i],"NAME") == 0)
         {
-            regName = columnValue[i];
+            if (columnValue[i] != NULL)
+            {
+                regName = columnValue[i];
+            
             // total_students.append(regName +'\n');
             thisPtr->registered_students.push_back(regName);
             thisPtr->present_absent_students.insert(std::pair<std::string,std::string>(regName,"A"));
+            }
         }
         else if (strcmp(azColName[i] , "PHOTO") == 0)
         {
-            regPhoto = columnValue[i];
+            if (columnValue[i] != NULL)
+                regPhoto = columnValue[i];
         }
     }
-    printf("%s\n", regPhoto);
+    
+    if (!regPhoto.empty()) {
+    std::cout << regPhoto << std::endl;
     matrix<rgb_pixel> known_img;
     try {
         load_image(known_img, regPhoto);
@@ -102,9 +109,11 @@ static int callback(void *NotUsed, int columns, char **columnValue, char **azCol
     // known_face_map.insert(std::pair<string,matrix<rgb_pixel>>(it->first, move(face_chip)));
     matrix<float,0,1> face_desc = net(face_chip);
     global_lock.lock();
+
     known_face_descriptors_map.insert(std::pair<string, matrix<float,0,1>>(regName, move(face_desc)));
     global_lock.unlock();
     // printf("StudentInfo:: %s\n", regName);
+    }
     }
     // thisPtr->registered_box.set_text(total_students);
     // }    
@@ -131,7 +140,7 @@ int main(int argc, char** argv)
 
     info = localtime(&rawtime);
 
-    strftime(buffer, 9, "%x", info);
+    strftime(buffer, 9, "%a", info);
     cout << "Time:: " << asctime(info) << endl;
     cout << "The local time is: " << buffer << endl;
 
@@ -290,7 +299,6 @@ int main(int argc, char** argv)
                     faceUI.showAttendanceLabel.set_text(display);
                     if(std::find(std::begin(results), std::end(results), it_desc->first) == std::end(results) ) {
                         results.push_back(it_desc->first);
-                        // std::cout << it_desc->first << std::endl;
                     }
                 }
             }

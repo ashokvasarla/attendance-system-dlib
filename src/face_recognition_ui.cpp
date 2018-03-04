@@ -64,26 +64,98 @@ face_recognition_ui::face_recognition_ui() :
     // presented_students_label(*this),
     // registered_box(*this),
     startAttendance(*this),
+    startTimeLabel(*this),
     stopAttendance(*this),
+    endTimeLabel(*this),
     showReport(*this),
     reportGrid(*this),
     startCondition(false),
     dateCounter(0),
     maxDate("\0"),
-    showAttendanceLabel(*this)
+    showAttendanceLabel(*this),
+    start_time_box(*this),
+    stop_time_box(*this),
+    mon(*this),tue(*this),wed(*this),thu(*this),fri(*this),sat(*this),sun(*this),
+    mon_flag("Mon"), tue_flag("Tue"), wed_flag("Wed"), thu_flag("Thu"), fri_flag("Fri"), sat_flag(""), sun_flag("")
 {
     set_title("Face Recognition Attendance system");
     set_size(1100,700);
     set_pos(0,0);
     show();
+    startTimeLabel.set_text("Start Time:");
+    startTimeLabel.set_pos(725,30);
+    start_time_box.set_pos(785,30);
+    start_time_box.set_size(80,20);
+    endTimeLabel.set_text("End Time:");
+    endTimeLabel.set_pos(875,30);
+    stop_time_box.set_pos(935,30);
+    stop_time_box.set_size(80,20);
+    mon.set_pos(725,60);
+    mon.set_name("Monday");
+    mon.set_checked();
+    mon.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
+    tue.set_pos(805,60);
+    tue.set_name("Tuesday");
+    tue.set_checked();
+    tue.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
+    wed.set_pos(885,60);
+    wed.set_name("Wednesday");
+    wed.set_checked();
+    wed.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
+    thu.set_pos(985,60);
+    thu.set_name("Thursday");
+    thu.set_checked();
+    thu.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
+    fri.set_pos(725,90);
+    fri.set_name("Friday");
+    fri.set_checked();
+    fri.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
+    sat.set_pos(805,90);
+    sat.set_name("Saturday");
+    sat.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
+    sun.set_pos(885,90);
+    sun.set_name("Sunday");
+    sun.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
+
+    dlib::queue<string>::kernel_2a_c qos;
+    string a;
+    a = "9:00"; qos.enqueue(a);
+    a = "9:30"; qos.enqueue(a);
+    a = "10:00"; qos.enqueue(a);
+    a = "10:30"; qos.enqueue(a);
+    a = "11:00"; qos.enqueue(a);
+    a = "11:30"; qos.enqueue(a);
+    a = "12:00"; qos.enqueue(a);
+    a = "12:30"; qos.enqueue(a);
+    a = "13:00"; qos.enqueue(a);
+    a = "13:30"; qos.enqueue(a);
+    a = "14:00"; qos.enqueue(a);
+    a = "14:30"; qos.enqueue(a);
+    a = "15:00"; qos.enqueue(a);
+    a = "15:30"; qos.enqueue(a);
+    a = "16:00"; qos.enqueue(a);
+    a = "16:30"; qos.enqueue(a);
+
+    start_time_box.load(qos);
+    start_time_box.select(2);
+    string d;
+    dlib::queue<string>::kernel_2a_c qos1;
+    d = "14:00"; qos1.enqueue(d);
+    d = "14:30"; qos1.enqueue(d);
+    d = "15:00"; qos1.enqueue(d);
+    d = "15:30"; qos1.enqueue(d);
+    d = "16:00"; qos1.enqueue(d);
+    d = "16:30"; qos1.enqueue(d);
+
+    stop_time_box.load(qos1);
 
     img.set_pos(10,60);
-    startAttendance.set_pos(725,60);
+    startAttendance.set_pos(725,130);
     startAttendance.set_name("Start Attendance");
-    stopAttendance.set_pos(895,60);
+    stopAttendance.set_pos(895,130);
     stopAttendance.set_name("Stop Attendance");
 
-    showReport.set_pos(830, 120);
+    showReport.set_pos(830, 180);
     showReport.set_name("Show Report");
 
     startAttendance.set_click_handler(*this,&face_recognition_ui::on_start_button_clicked);
@@ -101,7 +173,7 @@ face_recognition_ui::face_recognition_ui() :
     // results_box.set_pos(720,320);
     // results_box.set_size(200,200);
 
-    reportGrid.set_pos(700, 160);
+    reportGrid.set_pos(700, 220);
     reportGrid.set_size(370,500);
     reportGrid.set_grid_size(GRID_ROWS,3);
     reportGrid.set_column_width(0,150);
@@ -148,16 +220,16 @@ face_recognition_ui::face_recognition_ui() :
     } else {
     fprintf(stdout, "Table created successfully\n");
     }
-    sql = "SELECT MAX(AttendanceDT) FROM STUDENT_ATTENDANCE";
-    /* Execute SQL statement */
-    rc = sqlite3_exec(db, sql, callback_to_update, this, &zErrMsg);
+    // sql = "SELECT MAX(AttendanceDT) FROM STUDENT_ATTENDANCE";
+    // /* Execute SQL statement */
+    // rc = sqlite3_exec(db, sql, callback_to_update, this, &zErrMsg);
 
-    if( rc != SQLITE_OK ) {
-       fprintf(stderr, "SQL error: %s\n", zErrMsg);
-       sqlite3_free(zErrMsg);
-    } else {
-       fprintf(stdout, "Operation done successfully\n");
-    }
+    // if( rc != SQLITE_OK ) {
+    //    fprintf(stderr, "SQL error: %s\n", zErrMsg);
+    //    sqlite3_free(zErrMsg);
+    // } else {
+    //    fprintf(stdout, "Operation done successfully\n");
+    // }
 }
 
 face_recognition_ui::~face_recognition_ui()
@@ -165,38 +237,7 @@ face_recognition_ui::~face_recognition_ui()
     if ( startCondition == true)
     {
     startCondition = false;
-
-    for(std::map<std::string, std::string>::iterator it = present_absent_students.begin() ; it != present_absent_students.end(); ++it)
-    {
-        std::cout << "Name:: " << it->first << "    " << "Attendance:: " << it->second << std::endl;
-        /* Create SQL statement */
-        char sql_insert[100];
-        // sprintf(sql_insert, "INSERT INTO STUDENT_ATTENDANCE (NAME,AttendanceDT, Attendance) " \
-              "VALUES ( '%s', date('now', '%d days'), '%s');", it->first.c_str(), dateCounter, it->second.c_str());
-
-        std::string sql_string = "INSERT INTO STUDENT_ATTENDANCE (NAME,AttendanceDT, Attendance) VALUES('" + it->first +"'," + "date('"+ maxDate +"','" + std::to_string(dateCounter) +" days'),'"+ it->second + "');";
-
-        /* Execute SQL statement */
-        rc = sqlite3_exec(db, sql_string.c_str(), callback, 0, &zErrMsg);
-
-        if( rc != SQLITE_OK ){
-           fprintf(stderr, "SQL error: %s\n", zErrMsg);
-           sqlite3_free(zErrMsg);
-        } else {
-         fprintf(stdout, "Records created successfully\n");
-        }
-    }
-    present_absent_students.clear();
-    std::cout << "After present_absent_students clear" << std::endl;
-    for(std::vector<std::string>::iterator it = registered_students.begin(); it != registered_students.end(); ++it)
-    {
-        present_absent_students.insert(std::pair<std::string, std::string>(*it, "A"));
-    }
-    for(std::map<std::string, std::string>::iterator it = present_absent_students.begin() ; it != present_absent_students.end(); ++it)
-    {
-        std::cout << "Name:: " << it->first << "    " << "Attendance:: " << it->second << std::endl;
-    }
-    dateCounter++;
+    attendance_database_store();
     }
     close_window();
 }
@@ -207,23 +248,46 @@ void face_recognition_ui::set_webcam_image(const image_type& cimg) {
 }
 
 void face_recognition_ui::on_start_button_clicked() {
-    startCondition = true;
+    char buffer[3];
+    struct tm *info;
+    time_t rawtime;
+    time( &rawtime );
+    info = localtime(&rawtime);
+    strftime(buffer, 9, "%a", info);
+    if (strcmp(buffer, sat_flag.c_str()) == 0 || strcmp(buffer, sun_flag.c_str()) == 0 || strcmp(buffer, mon_flag.c_str()) == 0 || strcmp(buffer, tue_flag.c_str()) == 0 || strcmp(buffer, wed_flag.c_str()) == 0 || strcmp(buffer, thu_flag.c_str()) == 0 || strcmp(buffer, fri_flag.c_str()) == 0)
+        startCondition = true;
+    else
+        startCondition = false;
 }
 
 void face_recognition_ui::on_stop_button_clicked() {
     if ( startCondition == true)
     {
     startCondition = false;
+    delete_records();
+    attendance_database_store();
+    show_report();
+    }
+}
+
+void face_recognition_ui::delete_records()
+{
+    std::string del_string = "DELETE FROM STUDENT_ATTENDANCE WHERE AttendanceDT=date('now')";
+
+    rc = sqlite3_exec(db,del_string.c_str(), callback, 0, &zErrMsg);
+}
+
+void face_recognition_ui::attendance_database_store()
+{
 
     for(std::map<std::string, std::string>::iterator it = present_absent_students.begin() ; it != present_absent_students.end(); ++it)
     {
         std::cout << "Name:: " << it->first << "    " << "Attendance:: " << it->second << std::endl;
         /* Create SQL statement */
-        char sql_insert[100];
         // sprintf(sql_insert, "INSERT INTO STUDENT_ATTENDANCE (NAME,AttendanceDT, Attendance) " \
               "VALUES ( '%s', date('now', '%d days'), '%s');", it->first.c_str(), dateCounter, it->second.c_str());
 
-        std::string sql_string = "INSERT INTO STUDENT_ATTENDANCE (NAME,AttendanceDT, Attendance) VALUES('" + it->first +"'," + "date('"+ maxDate +"','" + std::to_string(dateCounter) +" days'),'"+ it->second + "');";
+        std::string sql_string = "INSERT INTO STUDENT_ATTENDANCE (NAME,AttendanceDT, Attendance) VALUES('" + it->first +"'," + "date('now','0 days'),'"+ it->second + "');";
 
         /* Execute SQL statement */
         rc = sqlite3_exec(db, sql_string.c_str(), callback, 0, &zErrMsg);
@@ -235,19 +299,14 @@ void face_recognition_ui::on_stop_button_clicked() {
          fprintf(stdout, "Records created successfully\n");
         }
     }
-    present_absent_students.clear();
-    std::cout << "After present_absent_students clear" << std::endl;
-    for(std::vector<std::string>::iterator it = registered_students.begin(); it != registered_students.end(); ++it)
-    {
-        present_absent_students.insert(std::pair<std::string, std::string>(*it, "A"));
-    }
-    for(std::map<std::string, std::string>::iterator it = present_absent_students.begin() ; it != present_absent_students.end(); ++it)
-    {
-        std::cout << "Name:: " << it->first << "    " << "Attendance:: " << it->second << std::endl;
-    }
-    dateCounter++;
-    }
+}
 
+void face_recognition_ui::on_show_button_clicked() {
+    show_report();
+}
+
+void face_recognition_ui::show_report()
+{
     rowCounter=1;
     sql = "SELECT * FROM STUDENT_ATTENDANCE";
     /* Execute SQL statement */
@@ -261,17 +320,49 @@ void face_recognition_ui::on_stop_button_clicked() {
     }
 }
 
-void face_recognition_ui::on_show_button_clicked() {
-    rowCounter=1;
-    sql = "SELECT * FROM STUDENT_ATTENDANCE";
-    /* Execute SQL statement */
-    rc = sqlite3_exec(db, sql, callback_to_showreport, this, &zErrMsg);
-
-    if( rc != SQLITE_OK ) {
-       fprintf(stderr, "SQL error: %s\n", zErrMsg);
-       sqlite3_free(zErrMsg);
-    } else {
-       fprintf(stdout, "Operation done successfully\n");
+void face_recognition_ui::cb_check_box_enabled (toggle_button&) {
+    if (mon.is_checked()) {
+        mon_flag = "Mon";
+    }
+    else {
+        mon_flag =  "";   
+    }
+    if (tue.is_checked()) {
+        tue_flag = "Tue";
+    }
+    else {
+        tue_flag = "";
+    }
+    if (wed.is_checked()) {
+        wed_flag = "Wed"; 
+    }
+    else {
+        wed_flag = "";
+    }
+    if (thu.is_checked()) { 
+        thu_flag = "Thu";
+    }
+    else { 
+        thu_flag = "";
+    }
+    
+    if (fri.is_checked()){ 
+        fri_flag = "Fri";
+    }
+    else { 
+        fri_flag = "";
     }
 
+    if (sat.is_checked()){ 
+        sat_flag = "Sat";
+    }
+    else{ 
+        sat_flag = "";
+    }
+    if (sun.is_checked()){ 
+        sun_flag = "Sun";
+    }
+    else{ 
+        sun_flag = "";
+    }
 }
