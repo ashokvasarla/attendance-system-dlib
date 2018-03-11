@@ -26,6 +26,7 @@ public:
     text_grid reportGrid;
     label showAttendanceLabel;
     int dateCounter;
+    int startTime,stopTime;
     // text_box results_box;
     // text_box registered_box;
 
@@ -37,6 +38,8 @@ private:
     void on_stop_button_clicked();
     void on_show_button_clicked();
     void cb_check_box_enabled (toggle_button&);
+    void on_start_lb_clicked(unsigned long);
+    void on_stop_lb_clicked(unsigned long);
     // label registered_students_label;
     // label presented_students_label;
     // perspective_display disp;
@@ -49,4 +52,5 @@ private:
     check_box mon,tue,wed,thu,fri,sat,sun;
     std::string mon_flag, tue_flag, wed_flag, thu_flag, fri_flag, sat_flag, sun_flag;
     label startTimeLabel, endTimeLabel;
+    // std::thread 
 };

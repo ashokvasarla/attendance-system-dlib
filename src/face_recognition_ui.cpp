@@ -76,7 +76,8 @@ face_recognition_ui::face_recognition_ui() :
     start_time_box(*this),
     stop_time_box(*this),
     mon(*this),tue(*this),wed(*this),thu(*this),fri(*this),sat(*this),sun(*this),
-    mon_flag("Mon"), tue_flag("Tue"), wed_flag("Wed"), thu_flag("Thu"), fri_flag("Fri"), sat_flag(""), sun_flag("")
+    mon_flag("Mon"), tue_flag("Tue"), wed_flag("Wed"), thu_flag("Thu"), fri_flag("Fri"), sat_flag(""), sun_flag(""),
+    startTime(540),stopTime(840)
 {
     set_title("Face Recognition Attendance system");
     set_size(1100,700);
@@ -85,40 +86,41 @@ face_recognition_ui::face_recognition_ui() :
     startTimeLabel.set_text("Start Time:");
     startTimeLabel.set_pos(725,30);
     start_time_box.set_pos(785,30);
-    start_time_box.set_size(80,20);
+    start_time_box.set_size(80,80); //80 ,20
     endTimeLabel.set_text("End Time:");
     endTimeLabel.set_pos(875,30);
     stop_time_box.set_pos(935,30);
-    stop_time_box.set_size(80,20);
-    mon.set_pos(725,60);
+    stop_time_box.set_size(80,80);
+    mon.set_pos(725,130);
     mon.set_name("Monday");
     mon.set_checked();
     mon.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
-    tue.set_pos(805,60);
+    tue.set_pos(805,130);
     tue.set_name("Tuesday");
     tue.set_checked();
     tue.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
-    wed.set_pos(885,60);
+    wed.set_pos(885,130);
     wed.set_name("Wednesday");
     wed.set_checked();
     wed.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
-    thu.set_pos(985,60);
+    thu.set_pos(985,130);
     thu.set_name("Thursday");
     thu.set_checked();
     thu.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
-    fri.set_pos(725,90);
+    fri.set_pos(725,160);
     fri.set_name("Friday");
     fri.set_checked();
     fri.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
-    sat.set_pos(805,90);
+    sat.set_pos(805,160);
     sat.set_name("Saturday");
     sat.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
-    sun.set_pos(885,90);
+    sun.set_pos(885,160);
     sun.set_name("Sunday");
     sun.set_click_handler(*this, &face_recognition_ui::cb_check_box_enabled);
 
     dlib::queue<string>::kernel_2a_c qos;
     string a;
+    a = "8:30"; qos.enqueue(a);
     a = "9:00"; qos.enqueue(a);
     a = "9:30"; qos.enqueue(a);
     a = "10:00"; qos.enqueue(a);
@@ -137,9 +139,11 @@ face_recognition_ui::face_recognition_ui() :
     a = "16:30"; qos.enqueue(a);
 
     start_time_box.load(qos);
-    start_time_box.select(2);
+    start_time_box.select(1);
+    start_time_box.set_click_handler(*this, &face_recognition_ui::on_start_lb_clicked);
     string d;
     dlib::queue<string>::kernel_2a_c qos1;
+    d = "13:30"; qos1.enqueue(d);
     d = "14:00"; qos1.enqueue(d);
     d = "14:30"; qos1.enqueue(d);
     d = "15:00"; qos1.enqueue(d);
@@ -148,14 +152,15 @@ face_recognition_ui::face_recognition_ui() :
     d = "16:30"; qos1.enqueue(d);
 
     stop_time_box.load(qos1);
-
+    stop_time_box.select(1);
+    stop_time_box.set_click_handler(*this, &face_recognition_ui::on_stop_lb_clicked);
     img.set_pos(10,60);
-    startAttendance.set_pos(725,130);
+    startAttendance.set_pos(725,190);
     startAttendance.set_name("Start Attendance");
-    stopAttendance.set_pos(895,130);
+    stopAttendance.set_pos(895,190);
     stopAttendance.set_name("Stop Attendance");
 
-    showReport.set_pos(830, 180);
+    showReport.set_pos(830, 240);
     showReport.set_name("Show Report");
 
     startAttendance.set_click_handler(*this,&face_recognition_ui::on_start_button_clicked);
@@ -173,7 +178,7 @@ face_recognition_ui::face_recognition_ui() :
     // results_box.set_pos(720,320);
     // results_box.set_size(200,200);
 
-    reportGrid.set_pos(700, 220);
+    reportGrid.set_pos(700, 280);
     reportGrid.set_size(370,500);
     reportGrid.set_grid_size(GRID_ROWS,3);
     reportGrid.set_column_width(0,150);
@@ -257,7 +262,10 @@ void face_recognition_ui::on_start_button_clicked() {
     if (strcmp(buffer, sat_flag.c_str()) == 0 || strcmp(buffer, sun_flag.c_str()) == 0 || strcmp(buffer, mon_flag.c_str()) == 0 || strcmp(buffer, tue_flag.c_str()) == 0 || strcmp(buffer, wed_flag.c_str()) == 0 || strcmp(buffer, thu_flag.c_str()) == 0 || strcmp(buffer, fri_flag.c_str()) == 0)
         startCondition = true;
     else
+    {
         startCondition = false;
+        message_box("Check", "Not a working day");
+    }
 }
 
 void face_recognition_ui::on_stop_button_clicked() {
@@ -308,7 +316,7 @@ void face_recognition_ui::on_show_button_clicked() {
 void face_recognition_ui::show_report()
 {
     rowCounter=1;
-    sql = "SELECT * FROM STUDENT_ATTENDANCE";
+    sql = "SELECT * FROM STUDENT_ATTENDANCE WHERE AttendanceDT=date('now')";
     /* Execute SQL statement */
     rc = sqlite3_exec(db, sql, callback_to_showreport, this, &zErrMsg);
 
@@ -365,4 +373,30 @@ void face_recognition_ui::cb_check_box_enabled (toggle_button&) {
     else{ 
         sun_flag = "";
     }
+}
+
+void face_recognition_ui::on_start_lb_clicked(unsigned long)
+{
+    std::string start_time_string;
+    long sel = start_time_box.get_selected();
+    start_time_string = start_time_box[sel];
+
+    std::size_t pos = start_time_string.find(":");
+    std:string hour = start_time_string.substr(0,pos);
+    std::string minutes = start_time_string.substr(pos+1);
+    startTime = (std::stoi(hour) *60) + (std::stoi(minutes));
+    std::cout << startTime << std::endl;
+}
+
+void face_recognition_ui::on_stop_lb_clicked(unsigned long)
+{
+    std::string stop_time_string;
+    long sel = stop_time_box.get_selected();
+    stop_time_string = stop_time_box[sel];
+
+    std::size_t pos = stop_time_string.find(":");
+    std:string hour = stop_time_string.substr(0,pos);
+    std::string minutes = stop_time_string.substr(pos+1);
+    stopTime = (std::stoi(hour) *60) + (std::stoi(minutes));
+    std::cout << stopTime << std::endl;
 }

@@ -128,7 +128,7 @@ int main(int argc, char** argv)
     char *zErrMsg = 0;
     int rc;
     char *sql;
-    char buffer[9];
+    char hour[3],minutes[3];
     struct tm *info;
     time_t rawtime;
     face_recognition_ui faceUI;
@@ -137,14 +137,12 @@ int main(int argc, char** argv)
 
     // current date/time based on current system
     time( &rawtime );
-
     info = localtime(&rawtime);
-
-    strftime(buffer, 9, "%a", info);
+    strftime(hour, 3, "%H", info);
+    strftime(minutes, 3, "%M", info);
+    int total_mins = (atoi(minutes) + (atoi(hour)*60));
     cout << "Time:: " << asctime(info) << endl;
-    cout << "The local time is: " << buffer << endl;
-
-
+    cout << "Total mins:: " << total_mins << endl;
 
     cv::VideoCapture cap(0);
     if (!cap.isOpened()) {
