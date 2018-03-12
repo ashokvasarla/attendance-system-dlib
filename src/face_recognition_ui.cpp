@@ -225,16 +225,24 @@ face_recognition_ui::face_recognition_ui() :
     } else {
     fprintf(stdout, "Table created successfully\n");
     }
-    // sql = "SELECT MAX(AttendanceDT) FROM STUDENT_ATTENDANCE";
-    // /* Execute SQL statement */
-    // rc = sqlite3_exec(db, sql, callback_to_update, this, &zErrMsg);
 
-    // if( rc != SQLITE_OK ) {
-    //    fprintf(stderr, "SQL error: %s\n", zErrMsg);
-    //    sqlite3_free(zErrMsg);
-    // } else {
-    //    fprintf(stdout, "Operation done successfully\n");
-    // }
+    // current date/time based on current system
+    time( &rawtime );
+    info = localtime(&rawtime);
+    strftime(hour_sys, 3, "%H", info);
+    strftime(minutes_sys, 3, "%M", info);
+    int total_mins = (atoi(minutes_sys) + (atoi(hour_sys)*60));
+    // cout << "Time:: " << asctime(info) << endl;
+    cout << "Total mins:: " << total_mins << endl;
+
+    if( total_mins > startTime && total_mins <= startTime+120)
+    {
+        startCondition = true;
+    }
+    else
+    {
+        startCondition = false;
+    }
 }
 
 face_recognition_ui::~face_recognition_ui()
@@ -242,6 +250,7 @@ face_recognition_ui::~face_recognition_ui()
     if ( startCondition == true)
     {
     startCondition = false;
+    delete_records();
     attendance_database_store();
     }
     close_window();
@@ -386,6 +395,23 @@ void face_recognition_ui::on_start_lb_clicked(unsigned long)
     std::string minutes = start_time_string.substr(pos+1);
     startTime = (std::stoi(hour) *60) + (std::stoi(minutes));
     std::cout << startTime << std::endl;
+     // current date/time based on current system
+    time( &rawtime );
+    info = localtime(&rawtime);
+    strftime(hour_sys, 3, "%H", info);
+    strftime(minutes_sys, 3, "%M", info);
+    int total_mins = (atoi(minutes_sys) + (atoi(hour_sys)*60));
+    // cout << "Time:: " << asctime(info) << endl;
+    cout << "Total mins:: " << total_mins << endl;
+    
+    if( total_mins > startTime && total_mins <= startTime+120)
+    {
+        startCondition = true;
+    }
+    else
+    {
+        startCondition = false;
+    }
 }
 
 void face_recognition_ui::on_stop_lb_clicked(unsigned long)
@@ -399,4 +425,21 @@ void face_recognition_ui::on_stop_lb_clicked(unsigned long)
     std::string minutes = stop_time_string.substr(pos+1);
     stopTime = (std::stoi(hour) *60) + (std::stoi(minutes));
     std::cout << stopTime << std::endl;
+     // current date/time based on current system
+    time( &rawtime );
+    info = localtime(&rawtime);
+    strftime(hour_sys, 3, "%H", info);
+    strftime(minutes_sys, 3, "%M", info);
+    int total_mins = (atoi(minutes_sys) + (atoi(hour_sys)*60));
+    // cout << "Time:: " << asctime(info) << endl;
+    cout << "Total mins:: " << total_mins << endl;
+    
+    if( total_mins > startTime && total_mins <= startTime+120)
+    {
+        startCondition = true;
+    }
+    else
+    {
+        startCondition = false;
+    }
 }

@@ -12,7 +12,6 @@
 #include <iterator>
 #include "face_recognition_ui.hpp"
 #include <sqlite3.h>
-#include <ctime>
 
 using namespace dlib;
 using namespace std;
@@ -128,21 +127,9 @@ int main(int argc, char** argv)
     char *zErrMsg = 0;
     int rc;
     char *sql;
-    char hour[3],minutes[3];
-    struct tm *info;
-    time_t rawtime;
     face_recognition_ui faceUI;
     std::vector<std::string> results;
     // std::cout << date('now');
-
-    // current date/time based on current system
-    time( &rawtime );
-    info = localtime(&rawtime);
-    strftime(hour, 3, "%H", info);
-    strftime(minutes, 3, "%M", info);
-    int total_mins = (atoi(minutes) + (atoi(hour)*60));
-    cout << "Time:: " << asctime(info) << endl;
-    cout << "Total mins:: " << total_mins << endl;
 
     cv::VideoCapture cap(0);
     if (!cap.isOpened()) {

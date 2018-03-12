@@ -3,6 +3,7 @@
 #include <dlib/image_transforms/interpolation.h>
 #include <dlib/image_transforms.h>
 #include <sqlite3.h>
+#include <ctime>
 
 using namespace std;
 using namespace dlib;
@@ -52,5 +53,8 @@ private:
     check_box mon,tue,wed,thu,fri,sat,sun;
     std::string mon_flag, tue_flag, wed_flag, thu_flag, fri_flag, sat_flag, sun_flag;
     label startTimeLabel, endTimeLabel;
+    struct tm *info;
+    time_t rawtime;
+    char hour_sys[3],minutes_sys[3];
     // std::thread 
 };
