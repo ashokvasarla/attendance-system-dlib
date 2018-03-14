@@ -39,8 +39,8 @@ private:
     void on_stop_button_clicked();
     void on_show_button_clicked();
     void cb_check_box_enabled (toggle_button&);
-    void on_start_lb_clicked(unsigned long);
-    void on_stop_lb_clicked(unsigned long);
+    void on_start_lb_clicked();
+    void on_stop_lb_clicked();
     // label registered_students_label;
     // label presented_students_label;
     // perspective_display disp;
@@ -48,13 +48,15 @@ private:
     int rc;
     char *zErrMsg = 0;
     char *sql;
-    list_box start_time_box;
-    list_box stop_time_box;
+    text_box start_time_box;
+    text_box stop_time_box;
     check_box mon,tue,wed,thu,fri,sat,sun;
     std::string mon_flag, tue_flag, wed_flag, thu_flag, fri_flag, sat_flag, sun_flag;
     label startTimeLabel, endTimeLabel;
     struct tm *info;
     time_t rawtime;
     char hour_sys[3],minutes_sys[3];
-    // std::thread 
+    std::thread *start_stop_td;
+    void thread_run();
+    bool thread_active_flag;
 };

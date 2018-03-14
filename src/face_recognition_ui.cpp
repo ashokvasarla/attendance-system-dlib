@@ -77,20 +77,23 @@ face_recognition_ui::face_recognition_ui() :
     stop_time_box(*this),
     mon(*this),tue(*this),wed(*this),thu(*this),fri(*this),sat(*this),sun(*this),
     mon_flag("Mon"), tue_flag("Tue"), wed_flag("Wed"), thu_flag("Thu"), fri_flag("Fri"), sat_flag(""), sun_flag(""),
-    startTime(540),stopTime(840)
+    startTime(540),stopTime(550),
+    thread_active_flag(false)
 {
     set_title("Face Recognition Attendance system");
     set_size(1100,700);
     set_pos(0,0);
     show();
     startTimeLabel.set_text("Start Time:");
-    startTimeLabel.set_pos(725,30);
-    start_time_box.set_pos(785,30);
-    start_time_box.set_size(80,80); //80 ,20
+    startTimeLabel.set_pos(725,90);
+    start_time_box.set_pos(785,90);
+    start_time_box.set_size(80,20); //80 ,20
+    start_time_box.set_text("9:00");
     endTimeLabel.set_text("End Time:");
-    endTimeLabel.set_pos(875,30);
-    stop_time_box.set_pos(935,30);
-    stop_time_box.set_size(80,80);
+    endTimeLabel.set_pos(875,90);
+    stop_time_box.set_pos(935,90);
+    stop_time_box.set_size(80,20);
+    stop_time_box.set_text("9:10");
     mon.set_pos(725,130);
     mon.set_name("Monday");
     mon.set_checked();
@@ -138,9 +141,9 @@ face_recognition_ui::face_recognition_ui() :
     a = "16:00"; qos.enqueue(a);
     a = "16:30"; qos.enqueue(a);
 
-    start_time_box.load(qos);
-    start_time_box.select(1);
-    start_time_box.set_click_handler(*this, &face_recognition_ui::on_start_lb_clicked);
+    // start_time_box.load(qos);
+    // start_time_box.select(1);
+    start_time_box.set_focus_lost_handler(*this, &face_recognition_ui::on_start_lb_clicked);
     string d;
     dlib::queue<string>::kernel_2a_c qos1;
     d = "13:30"; qos1.enqueue(d);
@@ -151,9 +154,9 @@ face_recognition_ui::face_recognition_ui() :
     d = "16:00"; qos1.enqueue(d);
     d = "16:30"; qos1.enqueue(d);
 
-    stop_time_box.load(qos1);
-    stop_time_box.select(1);
-    stop_time_box.set_click_handler(*this, &face_recognition_ui::on_stop_lb_clicked);
+    // stop_time_box.load(qos1);
+    // stop_time_box.select(1);
+    stop_time_box.set_focus_lost_handler (*this, &face_recognition_ui::on_stop_lb_clicked);
     img.set_pos(10,60);
     startAttendance.set_pos(725,190);
     startAttendance.set_name("Start Attendance");
@@ -226,7 +229,7 @@ face_recognition_ui::face_recognition_ui() :
     fprintf(stdout, "Table created successfully\n");
     }
 
-    // current date/time based on current system
+    /*// current date/time based on current system
     time( &rawtime );
     info = localtime(&rawtime);
     strftime(hour_sys, 3, "%H", info);
@@ -242,12 +245,15 @@ face_recognition_ui::face_recognition_ui() :
     else
     {
         startCondition = false;
-    }
+    }*/
 }
 
 face_recognition_ui::~face_recognition_ui()
 {
-    if ( startCondition == true)
+    thread_active_flag=false;
+    if(start_stop_td != nullptr)
+        start_stop_td->join();
+    if (startCondition == true)
     {
     startCondition = false;
     delete_records();
@@ -384,62 +390,79 @@ void face_recognition_ui::cb_check_box_enabled (toggle_button&) {
     }
 }
 
-void face_recognition_ui::on_start_lb_clicked(unsigned long)
+void face_recognition_ui::on_start_lb_clicked()
 {
     std::string start_time_string;
-    long sel = start_time_box.get_selected();
-    start_time_string = start_time_box[sel];
-
+    start_time_string = start_time_box.text();
+    // message_box("HI",start_time_string);
     std::size_t pos = start_time_string.find(":");
     std:string hour = start_time_string.substr(0,pos);
     std::string minutes = start_time_string.substr(pos+1);
     startTime = (std::stoi(hour) *60) + (std::stoi(minutes));
     std::cout << startTime << std::endl;
-     // current date/time based on current system
-    time( &rawtime );
-    info = localtime(&rawtime);
-    strftime(hour_sys, 3, "%H", info);
-    strftime(minutes_sys, 3, "%M", info);
-    int total_mins = (atoi(minutes_sys) + (atoi(hour_sys)*60));
-    // cout << "Time:: " << asctime(info) << endl;
-    cout << "Total mins:: " << total_mins << endl;
+    //  // current date/time based on current system
+    // time( &rawtime );
+    // info = localtime(&rawtime);
+    // strftime(hour_sys, 3, "%H", info);
+    // strftime(minutes_sys, 3, "%M", info);
+    // int total_mins = (atoi(minutes_sys) + (atoi(hour_sys)*60));
+    // // cout << "Time:: " << asctime(info) << endl;
+    // cout << "Total mins:: " << total_mins << endl;
     
-    if( total_mins > startTime && total_mins <= startTime+120)
-    {
-        startCondition = true;
-    }
-    else
-    {
-        startCondition = false;
-    }
+    // if( total_mins > startTime && total_mins <= startTime+10)
+    // {
+    //     startCondition = true;
+    // }
+    // else
+    // {
+    //     startCondition = false;
+    // }
 }
 
-void face_recognition_ui::on_stop_lb_clicked(unsigned long)
+void face_recognition_ui::on_stop_lb_clicked()
 {
     std::string stop_time_string;
-    long sel = stop_time_box.get_selected();
-    stop_time_string = stop_time_box[sel];
+    stop_time_string = stop_time_box.text();
 
     std::size_t pos = stop_time_string.find(":");
     std:string hour = stop_time_string.substr(0,pos);
     std::string minutes = stop_time_string.substr(pos+1);
     stopTime = (std::stoi(hour) *60) + (std::stoi(minutes));
     std::cout << stopTime << std::endl;
-     // current date/time based on current system
-    time( &rawtime );
-    info = localtime(&rawtime);
-    strftime(hour_sys, 3, "%H", info);
-    strftime(minutes_sys, 3, "%M", info);
-    int total_mins = (atoi(minutes_sys) + (atoi(hour_sys)*60));
-    // cout << "Time:: " << asctime(info) << endl;
-    cout << "Total mins:: " << total_mins << endl;
-    
-    if( total_mins > startTime && total_mins <= startTime+120)
+    thread_active_flag = true;
+    start_stop_td = new std::thread(&face_recognition_ui::thread_run,this);
+
+}
+
+void face_recognition_ui::thread_run()
+{
+    while(thread_active_flag)
     {
-        startCondition = true;
-    }
-    else
-    {
-        startCondition = false;
+        // current date/time based on current system
+        time( &rawtime );
+        info = localtime(&rawtime);
+        strftime(hour_sys, 3, "%H", info);
+        strftime(minutes_sys, 3, "%M", info);
+        int total_mins = (atoi(minutes_sys) + (atoi(hour_sys)*60));
+        // cout << "Time:: " << asctime(info) << endl;
+        
+        
+        if( total_mins >= startTime && total_mins < stopTime)
+        {
+            // cout << ".";
+            startCondition = true;
+            startAttendance.hide();
+        }
+        else if(total_mins > stopTime )
+        {
+            cout << "Stop Condition:: " << total_mins;
+            startCondition = false;
+            thread_active_flag = false;
+            stopAttendance.hide();
+            delete_records();
+            attendance_database_store();
+            show_report();
+        }
+
     }
 }
