@@ -19,6 +19,7 @@ public:
     int columnCounter; 
     int rowCounter;
     std::string date_save;
+    std::string name_save;
 private:
     menu_bar mbar;
     sqlite3 *db;
@@ -28,10 +29,9 @@ private:
 
 int callback_to_showreport(void *NotUsed, int argc, char **argv, char **azColName) {
     attendance_report *thisPtr = static_cast<attendance_report*>(NotUsed);
-    printf("argc = %d \n", argc);
+    
     for(int i = 0; i<argc; i++) {
-        printf("columnCounter= %d , i = %d -- %s = %s\n", thisPtr->columnCounter, i, azColName[i], argv[i] ? argv[i] : "NULL");
-        
+        // printf("columnCounter= %d , i = %d -- %s = %s\n", thisPtr->columnCounter, i, azColName[i], argv[i] ? argv[i] : "NULL");
         if (strcmp(azColName[i] , "AttendanceDT") == 0 && thisPtr->columnCounter != GRID_COLS)
         {
             if( strcmp(thisPtr->date_save.c_str(), argv[i]) != 0)
@@ -43,8 +43,8 @@ int callback_to_showreport(void *NotUsed, int argc, char **argv, char **azColNam
             else
             {
                 thisPtr->reportGrid.set_text(0,thisPtr->columnCounter,cast_to_string(argv[i]));
+                thisPtr->reportGrid.set_background_color(0,thisPtr->columnCounter,rgb_pixel(150,150,250));
             } 
-            
         }
         else if(strcmp(azColName[i],"NAME") == 0 && thisPtr->columnCounter != GRID_COLS)
         {
@@ -55,7 +55,6 @@ int callback_to_showreport(void *NotUsed, int argc, char **argv, char **azColNam
             thisPtr->reportGrid.set_text(thisPtr->rowCounter,thisPtr->columnCounter,cast_to_string(argv[i]));
         }
     }
-    // printf("\n");
     thisPtr->rowCounter++;
     return 0;
 }
